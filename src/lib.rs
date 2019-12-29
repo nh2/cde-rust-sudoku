@@ -2,14 +2,15 @@ use bitflags::bitflags;
 
 bitflags! {
     pub struct NumberSet: u16 {
-        const N1 = 0b00000001;
-        const N2 = 0b00000010;
-        const N4 = 0b00000100;
-        const N5 = 0b00001000;
-        const N6 = 0b00010000;
-        const N7 = 0b00100000;
-        const N8 = 0b01000000;
-        const N9 = 0b10000000;
+        const N1 = 0b000000001;
+        const N2 = 0b000000010;
+        const N3 = 0b000000100;
+        const N4 = 0b000001000;
+        const N5 = 0b000010000;
+        const N6 = 0b000100000;
+        const N7 = 0b001000000;
+        const N8 = 0b010000000;
+        const N9 = 0b100000000;
     }
 }
 
