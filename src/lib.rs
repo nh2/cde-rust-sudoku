@@ -25,29 +25,29 @@ pub struct Sudoku<T> {
     arr: [[T; 9]; 9],
 }
 
-// TODO: Replace u8 with type that can only represent 1-9
-// impl<T> Sudoku<T> {
-// 	pub fn row<'a>(i: u8) -> impl Iterator<Item=&'a T> + 'a {
+/// TODO: Replace usize with type that can only represent 1-9
+impl<T> Sudoku<T> {
+	pub fn row<'a>(&'a self, r: usize) -> impl Iterator<Item=&'a T> {
+		self.arr[r].iter()
+	}
+
+	pub fn row_mut<'a>(&'a mut self, r: usize) -> impl Iterator<Item=&'a mut T> {
+		self.arr[r].iter_mut()
+	}
+
+//  pub fn col<'a>(&'a self, c: usize) -> impl Iterator<Item=&'a T> {
+//  	unimplemented!()
+//  }
+
+// 	pub fn block<'a>(&'a self, i: usize, j: usize) -> impl Iterator<Item=&'a T> {
 // 		unimplemented!()
 // 	}
 
-// 	pub fn col<'a>(i: u8) -> impl Iterator<Item=&'a T> + 'a {
+// 	pub fn col_mut<'a>(&'a mut self, i: usize) -> impl Iterator<Item=&'a mut T> {
 // 		unimplemented!()
 // 	}
 
-// 	pub fn block<'a>(i: u8, j: u8) -> impl Iterator<Item=&'a T> + 'a {
+// 	pub fn block_mut<'a>(&'a mut self, i: usize, j: usize) -> impl Iterator<Item=&'a mut T> {
 // 		unimplemented!()
 // 	}
-
-// 	pub fn row_mut<'a>(i: u8) -> impl Iterator<Item=&'a mut T> + 'a {
-// 		unimplemented!()
-// 	}
-
-// 	pub fn col_mut<'a>(i: u8) -> impl Iterator<Item=&'a mut T> + 'a {
-// 		unimplemented!()
-// 	}
-
-// 	pub fn block_mut<'a>(i: u8, j: u8) -> impl Iterator<Item=&'a mut T> + 'a {
-// 		unimplemented!()
-// 	}
-// }
+}
