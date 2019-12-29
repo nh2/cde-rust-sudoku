@@ -16,7 +16,7 @@ bitflags! {
 impl NumberSet {
 	/// Returns true if exactly one flag is set
 	pub fn is_singleton(&self) -> bool {
-		self.bits().count_ones() == 1 
+		self.bits().count_ones() == 1
 	}
 }
 
@@ -25,7 +25,7 @@ pub struct Sudoku<T> {
     arr: [[T; 9]; 9],
 }
 
-/// TODO: Replace u8 with type that can only represent 1-9
+// TODO: Replace u8 with type that can only represent 1-9
 // impl<T> Sudoku<T> {
 // 	pub fn row<'a>(i: u8) -> impl Iterator<Item=&'a T> + 'a {
 // 		unimplemented!()
