@@ -25,14 +25,28 @@ pub struct Sudoku<T> {
     arr: [[T; 9]; 9],
 }
 
+#[repr(usize)]
+pub enum Ix {
+	Ix1 = 0,
+	Ix2,
+	Ix3,
+	Ix4,
+	Ix5,
+	Ix6,
+	Ix7,
+	Ix8,
+	Ix9,
+}
+
+
 /// TODO: Replace usize with type that can only represent 1-9
 impl<T> Sudoku<T> {
-	pub fn row<'a>(&'a self, r: usize) -> impl Iterator<Item=&'a T> {
-		self.arr[r].iter()
+	pub fn row<'a>(&'a self, r: Ix) -> impl Iterator<Item=&'a T> {
+		self.arr[r as usize].iter()
 	}
 
-	pub fn row_mut<'a>(&'a mut self, r: usize) -> impl Iterator<Item=&'a mut T> {
-		self.arr[r].iter_mut()
+	pub fn row_mut<'a>(&'a mut self, r: Ix) -> impl Iterator<Item=&'a mut T> {
+		self.arr[r as usize].iter_mut()
 	}
 
 //  pub fn col<'a>(&'a self, c: usize) -> impl Iterator<Item=&'a T> {
