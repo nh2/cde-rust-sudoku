@@ -40,7 +40,7 @@ pub enum Ix {
     Ix9,
 }
 
-/// TODO: Replace usize with type that can only represent 1-9
+
 impl<T> Sudoku<T> {
     pub fn row<'a>(&'a self, r: Ix) -> impl Iterator<Item = &'a T> {
         self.arr[r as usize].iter()
@@ -58,11 +58,19 @@ impl<T> Sudoku<T> {
         self.arr.iter_mut().map(move |row| &mut row[c as usize])
     }
 
-    // 	pub fn block<'a>(&'a self, i: usize, j: usize) -> impl Iterator<Item=&'a T> {
-    // 		unimplemented!()
-    // 	}
+    pub fn block<'a>(&'a self, r: Ix, c: Ix) -> impl Iterator<Item = &'a T> {
+        let r_min = (r as usize / 3) * 3;
+        let c_min = (c as usize / 3) * 3;
+        self.arr[r_min..r_min + 3]
+            .iter()
+            .flat_map(move |row| row[c_min..c_min + 3].iter())
+    }
 
-    // 	pub fn block_mut<'a>(&'a mut self, i: usize, j: usize) -> impl Iterator<Item=&'a mut T> {
-    // 		unimplemented!()
-    // 	}
+    pub fn block_mut<'a>(&'a mut self, r: Ix, c: Ix) -> impl Iterator<Item = &'a mut T> {
+        let r_min = (r as usize / 3) * 3;
+        let c_min = (c as usize / 3) * 3;
+        self.arr[r_min..r_min + 3]
+            .iter_mut()
+            .flat_map(move |row| row[c_min..c_min + 3].iter_mut())
+    }
 }
