@@ -178,7 +178,6 @@ impl Sudoku<NumberSet> {
                 seen = seen | *cell;
             }
             if seen != NumberSet::all() {
-                println!("Row {} unsolved", usize::from(i));
                 return false;
             }
         }
@@ -188,7 +187,6 @@ impl Sudoku<NumberSet> {
                 seen = seen | *cell;
             }
             if seen != NumberSet::all() {
-                println!("Col {} unsolved", usize::from(i));
                 return false;
             }
         }
@@ -198,7 +196,6 @@ impl Sudoku<NumberSet> {
                 seen = seen | *cell;
             }
             if seen != NumberSet::all() {
-                println!("Block {} unsolved", usize::from(i));
                 return false;
             }
         }

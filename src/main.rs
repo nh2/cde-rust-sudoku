@@ -2,7 +2,7 @@ use cde_rust_sudoku::base::*;
 use cde_rust_sudoku::solve::*;
 use std::str::FromStr;
 
-const SUDOKU: &'static str = "\
+const SOLVED_SUDOKU: &'static str = "\
 ┌─┬─┬─┬─┬─┬─┬─┬─┬─┐
 │7│8│2│9│5│3│4│1│6│
 ├─┼─┼─┼─┼─┼─┼─┼─┼─┤
@@ -23,19 +23,29 @@ const SUDOKU: &'static str = "\
 │3│2│8│6│1│9│5│4│7│
 └─┴─┴─┴─┴─┴─┴─┴─┴─┘";
 
-const SUDOKU_2: &'static str = "
- 8 9  4
-5 6 8 79
-943 6  8
- 9    158
-6  528  4
-875    6
- 5  4 639
- 69 7 8 1
-  8  9 4 ";
+const SUDOKU1: &'static str = "\
+┌─┬─┬─┬─┬─┬─┬─┬─┬─┐
+│ │8│ │9│ │ │4│ │ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│5│ │6│ │8│ │7│9│ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│9│4│3│ │6│ │ │8│ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │9│ │ │ │ │1│5│8│
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│6│ │ │5│2│8│ │ │4│
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│8│7│5│ │ │ │ │6│ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │5│ │ │4│ │6│3│9│
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │6│9│ │7│ │8│ │1│
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │ │8│ │ │9│ │4│ │
+└─┴─┴─┴─┴─┴─┴─┴─┴─┘";
 
 fn main() {
-    let mut sudoku = Sudoku::from_str(SUDOKU).unwrap();
+    let mut sudoku = Sudoku::from_str(SUDOKU1).unwrap();
     let sudoku = match brute_force(sudoku) {
         SolverResult::Solved(s) => {
             println!("solved!");
