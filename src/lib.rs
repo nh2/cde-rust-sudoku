@@ -29,7 +29,7 @@ pub struct Sudoku<T> {
 #[repr(usize)]
 #[derive(Copy, Clone)]
 pub enum Ix {
-    Ix1 = 0,
+    Ix1,
     Ix2,
     Ix3,
     Ix4,
@@ -40,6 +40,21 @@ pub enum Ix {
     Ix9,
 }
 
+impl Into<usize> for Ix {
+    fn into(self) -> usize {
+        match self {
+            Ix1 => 0,
+            Ix2 => 1,
+            Ix3 => 2,
+            Ix4 => 3,
+            Ix5 => 4,
+            Ix6 => 5,
+            Ix7 => 6,
+            Ix8 => 7,
+            Ix9 => 8,
+        }
+    }
+}
 
 impl<T> Sudoku<T> {
     pub fn row<'a>(&'a self, r: Ix) -> impl Iterator<Item = &'a T> {
