@@ -21,6 +21,17 @@ bitflags! {
 }
 
 impl NumberSet {
+    pub const VALUES: [NumberSet; 9] = [
+        NumberSet::N1,
+        NumberSet::N2,
+        NumberSet::N3,
+        NumberSet::N4,
+        NumberSet::N5,
+        NumberSet::N6,
+        NumberSet::N7,
+        NumberSet::N8,
+        NumberSet::N9,
+    ];
     /// Returns true if exactly one flag is set
     pub fn is_singleton(&self) -> bool {
         self.bits().count_ones() == 1
@@ -66,13 +77,13 @@ impl From<Ix> for usize {
     }
 }
 
+#[derive(Clone)]
 pub struct Sudoku<T> {
     // row-major
     arr: [[T; 9]; 9],
 }
 
 impl<T> Sudoku<T> {
-
     pub fn get<'a>(&'a self, r: Ix, c: Ix) -> &'a T {
         &self.arr[usize::from(r)][usize::from(c)]
     }
@@ -91,7 +102,7 @@ impl<T> Sudoku<T> {
 
     pub fn iter_with_index<'a>(&'a self) -> impl Iterator<Item = (Ix, Ix, &'a T)> {
         let indices = Ix::all_indices().flat_map(|r| Ix::all_indices().map(move |c| (r, c)));
-        indices.map(move |(r, c)| (r , c, &self.arr[usize::from(r)][usize::from(c)]))
+        indices.map(move |(r, c)| (r, c, &self.arr[usize::from(r)][usize::from(c)]))
     }
 
     pub fn row<'a>(&'a self, r: Ix) -> impl Iterator<Item = &'a T> {
