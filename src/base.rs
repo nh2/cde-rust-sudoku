@@ -65,8 +65,10 @@ pub struct Sudoku<T> {
     arr: [[T; 9]; 9],
 }
 
-impl From<Sudoku<T>> for Sudoku<U> {
-    fn from (item: Sudoku<T> -> Sudoku<U> {
+//TODO: write from trait with the new Iterator
+//
+//impl From<Sudoku<T>> for Sudoku<U> {
+//    fn from (item: Sudoku<T> -> Sudoku<U> {
 
 
 
