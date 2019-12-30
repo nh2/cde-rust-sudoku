@@ -130,8 +130,8 @@ impl<T> Sudoku<T> {
     }
 
     pub fn block_for_cell<'a>(&'a self, r: Ix, c: Ix) -> impl Iterator<Item = &'a T> {
-        let r_min = (usize::form(r) / 3) * 3;
-        let c_min = (usize::form(c) / 3) * 3;
+        let r_min = (usize::from(r) / 3) * 3;
+        let c_min = (usize::from(c) / 3) * 3;
         self.arr[r_min..r_min + 3]
             .iter()
             .flat_map(move |row| row[c_min..c_min + 3].iter())
