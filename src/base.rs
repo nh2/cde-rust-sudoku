@@ -66,6 +66,28 @@ pub struct Sudoku<T> {
 }
 
 impl<T> Sudoku<T> {
+
+    pub fn get<'a>(&'a self, r: Ix, c: Ix) -> &'a T {
+        &self.arr[usize::from(r)][usize::from(c)]
+    }
+
+    pub fn get_mut<'a>(&'a mut self, r: Ix, c: Ix) -> &'a mut T {
+        &mut self.arr[usize::from(r)][usize::from(c)]
+    }
+
+    pub fn iter<'a>(&'a self) -> impl Iterator<Item = &'a T> {
+        self.arr.iter().flat_map(|row| row.iter())
+    }
+
+    pub fn iter_mut<'a>(&'a mut self) -> impl Iterator<Item = &'a mut T> {
+        self.arr.iter_mut().flat_map(|row| row.iter_mut())
+    }
+
+    pub fn iter_with_index<'a>(&'a self) -> impl Iterator<Item = (Ix, Ix, &'a T)> {
+        let indices = Ix::all_indices().flat_map(|r| Ix::all_indices().map(move |c| (r, c)));
+        indices.map(move |(r, c)| (r , c, &self.arr[usize::from(r)][usize::from(c)]))
+    }
+
     pub fn row<'a>(&'a self, r: Ix) -> impl Iterator<Item = &'a T> {
         self.arr[usize::from(r)].iter()
     }
