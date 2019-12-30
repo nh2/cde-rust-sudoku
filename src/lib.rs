@@ -29,25 +29,38 @@ pub struct Sudoku<T> {
 
 impl Sudoku<NumberSet> {
     fn is_valid(&self) -> bool {
-        let mut valid = true;
         for i in Ix::all_indices() {
             let mut seen = NumberSet::empty();
             for cell in self.row(i) {
-                // check that cell is singleton
+                // check that the cell has exactly one number
                 if !cell.is_singleton() {
                     return false;
                 }
                 seen = seen | *cell;
             }
-            valid = valid && seen == NumberSet::Any;
+            if seen != NumberSet::Any {
+                return false;
+            }
         }
         for i in Ix::all_indices() {
             let mut seen = NumberSet::empty();
             for cell in self.col(i) {
                 seen = seen | *cell;
             }
-            valid = valid && seen == NumberSet::Any;
+            if seen != NumberSet::Any {
+                return false;
+            }
         }
+        for i in Ix::all_indices() {
+            let mut seen = NumberSet::empty();
+            for cell in self.block(i) {
+                seen = seen | *cell;
+            }
+            if seen != NumberSet::Any {
+                return false;
+            }
+        }
+        true
     }
 }
 
@@ -74,9 +87,9 @@ impl Ix {
     }
 }
 
-impl Into<usize> for Ix {
-    fn into(self) -> usize {
-        match self {
+impl From<Ix> for usize {
+    fn from(ix: Ix) -> usize {
+        match ix {
             Ix1 => 0,
             Ix2 => 1,
             Ix3 => 2,
@@ -107,7 +120,23 @@ impl<T> Sudoku<T> {
         self.arr.iter_mut().map(move |row| &mut row[c as usize])
     }
 
-    pub fn block<'a>(&'a self, r: Ix, c: Ix) -> impl Iterator<Item = &'a T> {
+    pub fn block<'a>(&'a self, block_ix: Ix) -> impl Iterator<Item = &'a T> {
+        let r_min = (usize::from(block_ix) / 3) * 3;
+        let c_min = (usize::from(block_ix) % 3) * 3;
+        self.arr[r_min..r_min + 3]
+            .iter()
+            .flat_map(move |row| row[c_min..c_min + 3].iter())
+    }
+
+    pub fn block_mut<'a>(&'a mut self, block_ix: Ix) -> impl Iterator<Item = &'a mut T> {
+        let r_min = (usize::from(block_ix) / 3) * 3;
+        let c_min = (usize::from(block_ix) % 3) * 3;
+        self.arr[r_min..r_min + 3]
+            .iter_mut()
+            .flat_map(move |row| row[c_min..c_min + 3].iter_mut())
+    }
+
+    pub fn block_for_cell<'a>(&'a self, r: Ix, c: Ix) -> impl Iterator<Item = &'a T> {
         let r_min = (r as usize / 3) * 3;
         let c_min = (c as usize / 3) * 3;
         self.arr[r_min..r_min + 3]
@@ -115,7 +144,7 @@ impl<T> Sudoku<T> {
             .flat_map(move |row| row[c_min..c_min + 3].iter())
     }
 
-    pub fn block_mut<'a>(&'a mut self, r: Ix, c: Ix) -> impl Iterator<Item = &'a mut T> {
+    pub fn block_for_cell_mut<'a>(&'a mut self, r: Ix, c: Ix) -> impl Iterator<Item = &'a mut T> {
         let r_min = (r as usize / 3) * 3;
         let c_min = (c as usize / 3) * 3;
         self.arr[r_min..r_min + 3]
