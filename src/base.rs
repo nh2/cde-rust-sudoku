@@ -201,6 +201,106 @@ impl Sudoku<NumberSet> {
         }
         true
     }
+
+
+    /* pub fn is_unsolved(&self) -> bool {
+        !self.is_solved && !self.contradiction
+    } */
+
+    pub fn all_numbers_possible(&self) -> bool {
+        //check that any number is possible in all rows, cols and blocks
+        for i in Ix::all_indices() {
+            let mut seen_row = NumberSet::empty();
+            let mut seen_col = NumberSet::empty();
+            let mut seen_block = NumberSet::empty();
+            for cell in self.row(i) {
+                seen_row = seen_row | *cell;
+            }
+            if seen_row != NumberSet::all() {
+                return false;
+            }            
+            for cell in self.col(i) {
+                seen_col = seen_col | *cell;
+            }
+            if seen_col != NumberSet::all() {
+                return false;
+            }            
+            for cell in self.block(i) {
+                seen_block = seen_block | *cell;
+            }
+            if seen_block != NumberSet::all() {
+                return false;
+            }
+        }
+        true
+    }
+
+    pub fn has_no_contradiciton(&self) -> bool {
+        //check that any number is possible in all rows, cols and blocks
+        //check that any set number is only in one cell in every row, col and block
+        //check that any cell has min one number
+        for i in Ix::all_indices() {
+            let mut seen_row = NumberSet::empty();
+            let mut seen_col = NumberSet::empty();
+            let mut seen_block = NumberSet::empty();
+            let mut seen_row_set = NumberSet::empty();
+            let mut seen_col_set = NumberSet::empty();
+            let mut seen_block_set = NumberSet::empty();
+            for cell in self.row(i) {
+                if *cell == NumberSet::empty() {
+                    return false;
+                }
+                if cell.is_singleton() {
+                    if *cell & seen_row_set != NumberSet::empty() {
+                        //number was set before
+                        return false;
+                    } else {
+                        seen_row_set = seen_row_set | *cell;
+                    }
+                }
+                seen_row = seen_row | *cell;
+            }
+            if seen_row != NumberSet::all() {
+                return false;
+            }            
+            for cell in self.col(i) {
+                if *cell == NumberSet::empty() {
+                    return false;
+                }                
+                if cell.is_singleton() {
+                    if *cell & seen_col_set != NumberSet::empty() {
+                        //number was set before
+                        return false;
+                    } else {
+                        seen_col_set = seen_col_set | *cell;
+                    }
+                }
+                seen_col = seen_col | *cell;
+            }
+            if seen_col != NumberSet::all() {
+                return false;
+            }            
+            for cell in self.block(i) {
+                if *cell == NumberSet::empty() {
+                    return false;
+                }                
+                if cell.is_singleton() {
+                    if *cell & seen_block_set != NumberSet::empty() {
+                        //number was set before
+                        return false;
+                    } else {
+                        seen_block_set = seen_block_set | *cell;
+                    }
+                }
+                seen_block = seen_block | *cell;
+            }
+            if seen_block != NumberSet::all() {
+                return false;
+            }
+        }
+        true       
+    }
+
 }
 
 impl Display for Sudoku<NumberSet> {
@@ -441,6 +541,7 @@ pub fn compute_exclude(solver_state: &mut Sudoku<NumberSet>) {
 mod tests {
     use super::*;
     use std::collections::HashSet;
+    use lazy_static::lazy_static;
 
     const SUDOKU: Sudoku<u8> = Sudoku {
         arr: [
@@ -473,5 +574,96 @@ mod tests {
         let block2: HashSet<_> = SUDOKU.block(Ix2).collect();
         let expected: HashSet<_> = [14, 15, 16, 24, 25, 26, 34, 35, 36].iter().collect();
         assert_eq!(block2, expected);
+    }
+
+    const N1:NumberSet = NumberSet::N1;
+    const N2:NumberSet = NumberSet::N2;
+    const N3:NumberSet = NumberSet::N3;
+    const N4:NumberSet = NumberSet::N4;
+    const N5:NumberSet = NumberSet::N5;
+    const N6:NumberSet = NumberSet::N6;
+    const N7:NumberSet = NumberSet::N7;
+    const N8:NumberSet = NumberSet::N8;
+    const N9:NumberSet = NumberSet::N9;
+    const NALL:NumberSet = NumberSet::all();
+    const VALID_SUDOKU: Sudoku<NumberSet> = Sudoku {
+        arr: [
+            [N5, N6, N3, N2, N1, N7, N9, N8, N4],
+            [N9, N8, N1, N3, N4, N6, N7, N5, N2],
+            [N2, N4, N7, N9, N8, N5, N1, N3, N6],
+            [N7, N1, N8, N5, N6, N9, N2, N4, N3],
+            [N4, N9, N6, N1, N2, N3, N5, N7, N8],
+            [N3, N2, N5, N4, N7, N8, N6, N9, N1],
+            [N1, N3, N4, N7, N5, N2, N8, N6, N9],
+            [N6, N7, N9, N8, N3, N1, N4, N2, N5],
+            [N8, N5, N2, N6, N9, N4, N3, N1, N7],
+        ],
+    };
+    const CONTRADICTION_SUDOKU1: Sudoku<NumberSet> = Sudoku {
+        //empty cell
+        arr: [
+            [N5, N6, N3, N2, N1, N7, N9, N8, N4],
+            [N9, N8, N1, N3, N4, N6, N7, N5, N2],
+            [N2, N4, N7, N9, N8, N5, N1, N3, N6],
+            [N7, N1, N8, N5, N6, N9, N2, N4, N3],
+            [N4, N9, N6, N1, N2, N3, N5, N7, N8],
+            [N3, N2, N5, N4, N7, N8, N6, N9, N1],
+            [N1, N3, N4, N7, N5, N2, N8, N6, N9],
+            [N6, N7, N9, N8, N3, NumberSet::empty(), N4, N2, N5],
+            [N8, N5, N2, N6, N9, N4, N3, N1, N7],
+        ],
+    };    
+    lazy_static! { 
+        static ref CONTRADICTION_SUDOKU2: Sudoku<NumberSet> = Sudoku {
+        //number not in row/block
+        arr: [
+            [N5, N6, N3, N2, N1, N7, N9, N8, N4],
+            [N9, N8|N9, N8|N3|N4, N3|N9, N4|N8|N9, N6, N7, N5, N2],
+            [N2, N4, N7, N9, N8, N5, N1, N3, N6],
+            [N7, N1, N8, N5, N6, N9, N2, N4, N3],
+            [N4, N9, N6, N1, N2, N3, N5, N7, N8],
+            [N3, N2, N5, N4, N7, N8, N6, N9, N1],
+            [N1, N3, N4, N7, N5, N2, N8, N6, N9],
+            [N6, N7, N9, N8, N3, N1, N4, N2, N5],
+            [N8, N5, N2, N6, N9, N4, N3, N1, N7],
+        ],
+        }; 
+    }
+    lazy_static! { 
+        static ref CONTRADICTION_SUDOKU3: Sudoku<NumberSet> = Sudoku {
+        //one number 2 times in one block
+        arr: [
+            [N5, NALL, N3, N2, N1, NALL, NALL, N8, N4],
+            [N9, N8, N1, NALL, N4, NALL, NALL, N5, N2],
+            [N2, N4, N7, NALL, N8, NALL, NALL, N3, N6],
+            [N7, N1, N8, NALL, N6, NALL, NALL, N4, N3],
+            [N4, N9, N6, NALL, N2, NALL, NALL, N7, N8],
+            [N3, N2, N5, NALL, N7, NALL, NALL, N9, N1],
+            [N1, N3, N4, NALL, N5, NALL, NALL, N6, N9],
+            [N6, N7, N9, NALL, N3, NALL, NALL, N2, N5],
+            [NALL, NALL, NALL, NALL, NALL, NALL, N6, N1, N7],
+        ],
+        }; 
+    }
+    #[test]
+    fn test_is_solved() {
+        assert_eq!(VALID_SUDOKU.is_solved(), true);
+        assert_eq!(CONTRADICTION_SUDOKU1.is_solved(), false);
+        assert_eq!(CONTRADICTION_SUDOKU2.is_solved(), false);
+        assert_eq!(CONTRADICTION_SUDOKU3.is_solved(), false);
+    }
+    #[test]
+    fn test_has_no_contradiction() {
+        assert_eq!(VALID_SUDOKU.has_no_contradiciton(), true);
+        assert_eq!(CONTRADICTION_SUDOKU1.has_no_contradiciton(), false);
+        assert_eq!(CONTRADICTION_SUDOKU2.has_no_contradiciton(), false);
+        assert_eq!(CONTRADICTION_SUDOKU3.has_no_contradiciton(), false);
+    }
+    #[test]
+    fn test_all_numbers_possible() {
+        assert_eq!(VALID_SUDOKU.all_numbers_possible(), true);
+        assert_eq!(CONTRADICTION_SUDOKU1.all_numbers_possible(), false);
+        assert_eq!(CONTRADICTION_SUDOKU2.all_numbers_possible(), false);
+        assert_eq!(CONTRADICTION_SUDOKU3.all_numbers_possible(), true);
     }
 }
