@@ -1,3 +1,7 @@
+const SUDOKUSIZE: usize = 9;
+
+type GameStateCell = Option<i8>;
+
 use bitflags::bitflags;
 
 bitflags! {
@@ -11,6 +15,8 @@ bitflags! {
         const N7 = 0b001000000;
         const N8 = 0b010000000;
         const N9 = 0b100000000;
+        const NONE = 0b000000000;
+        const ALL  = 0b111111111;
     }
 }
 
@@ -171,6 +177,162 @@ impl Sudoku<NumberSet> {
             }
         }
         true
+    }
+}
+
+/// Parse Sudoku Game state from String
+///
+/// Input string format:
+///     1-9, space/underscore/0, newline are interpreted, any unknown character
+///         is skipped
+///     1-9 means the cell has this content
+///     0, space, underscore means the cell is empty (undefined)
+///     newline starts a new sudoku line, empty lines are skipped
+///     you can make your input pretty by using frames like |+- or others, as
+///     they are skipped anyways
+/// Output format:
+///     Sudoku<GameStateCell>
+pub fn parse_game_state(input: &str) -> Result<Sudoku<GameStateCell>, String> {
+    let mut game_state_vec = Vec::new();
+    let emptyset = " _0";
+    let charset: String = "123456789".to_owned() + emptyset;
+    let charsetstr: &str = &charset;
+    for line in input.lines() {
+        let game_state_line: Vec<GameStateCell> = line
+            .chars()
+            .filter(|x| charsetstr.find(x.to_owned()) != None)
+            .map(|ch| {
+                let cell = if emptyset.find(ch) != None {
+                    None
+                } else {
+                    match ch {
+                        '1' => Some(1),
+                        '2' => Some(3),
+                        '3' => Some(4),
+                        '4' => Some(4),
+                        '5' => Some(5),
+                        '6' => Some(6),
+                        '7' => Some(7),
+                        '8' => Some(8),
+                        '9' => Some(9),
+                        _ => panic!("Unhandled character."),
+                    }
+                };
+                cell
+            })
+            .collect();
+        if game_state_line.len() > 0 {
+            game_state_vec.push(game_state_line)
+        }
+    }
+    /*for line in &game_state_vec {
+        println!("{:?}", line);
+    }*/
+    let mut game_state = Sudoku::<GameStateCell> {
+        arr: [[None; SUDOKUSIZE]; SUDOKUSIZE],
+    };
+    use std::cmp::min;
+    for i in 0..min(game_state_vec.len(), SUDOKUSIZE) {
+        let line_len = game_state_vec[i].len();
+        for j in 0..min(line_len, SUDOKUSIZE) {
+            game_state.arr[i][j] = game_state_vec[i][j];
+        }
+    }
+    // TODO: define error conditions
+    if game_state_vec.len() > SUDOKUSIZE {
+        return Err("Error while parsing Sudoku: Too many lines".to_string());
+    }
+    //println!("{:?}", game_state.arr);
+    Ok(game_state)
+}
+
+pub fn format_game_state(game_state: &Sudoku<GameStateCell>) -> String {
+    let mut s = String::new();
+    for i in 0..SUDOKUSIZE {
+        for j in 0..SUDOKUSIZE {
+            match game_state.arr[i][j] {
+                Some(n) => s.push_str(&n.to_string()),
+                None => s.push(' '),
+            }
+        }
+        s.push('\n');
+    }
+    s
+}
+
+/// Known issues:
+/// - does not use iterators
+/// - should be in impl Sudoku<>
+/// (this also applies to other functions)
+pub fn game_to_solver_state(game_state: &Sudoku<GameStateCell>) -> Sudoku<NumberSet> {
+    let mut solver_state = Sudoku::<NumberSet> {
+        arr: [[NumberSet::NONE; SUDOKUSIZE]; SUDOKUSIZE],
+    };
+    for i in 0..SUDOKUSIZE {
+        for j in 0..SUDOKUSIZE {
+            solver_state.arr[i][j] = match game_state.arr[i][j] {
+                Some(1) => NumberSet::N1,
+                Some(2) => NumberSet::N2,
+                Some(3) => NumberSet::N3,
+                Some(4) => NumberSet::N4,
+                Some(5) => NumberSet::N5,
+                Some(6) => NumberSet::N6,
+                Some(7) => NumberSet::N7,
+                Some(8) => NumberSet::N8,
+                Some(9) => NumberSet::N9,
+                None => NumberSet::ALL,
+                Some(_) => {
+                    panic!("Invalid game state while converting game state to solver state.")
+                }
+            };
+        }
+    }
+    solver_state
+}
+
+pub fn solver_to_game_state(solver_state: &Sudoku<NumberSet>) -> Sudoku<GameStateCell> {
+    let mut game_state = Sudoku::<GameStateCell> {
+        arr: [[None; SUDOKUSIZE]; SUDOKUSIZE],
+    };
+    for i in 0..SUDOKUSIZE {
+        for j in 0..SUDOKUSIZE {
+            game_state.arr[i][j] = match solver_state.arr[i][j] {
+                NumberSet::N1 => Some(1),
+                NumberSet::N2 => Some(2),
+                NumberSet::N3 => Some(3),
+                NumberSet::N4 => Some(4),
+                NumberSet::N5 => Some(5),
+                NumberSet::N6 => Some(6),
+                NumberSet::N7 => Some(7),
+                NumberSet::N8 => Some(8),
+                NumberSet::N9 => Some(9),
+                _ => None,
+            };
+        }
+    }
+    game_state
+}
+
+pub fn compute_exclude(solver_state: &mut Sudoku<NumberSet>) {
+    for i in 0..SUDOKUSIZE {
+        for j in 0..SUDOKUSIZE {
+            let cell_num_set = solver_state.arr[i][j];
+            if cell_num_set.is_singleton() {
+                for k in 0..SUDOKUSIZE {
+                    // row
+                    if k != j {
+                        solver_state.arr[i][k] = solver_state.arr[i][k] - cell_num_set;
+                    }
+                }
+                for k in 0..SUDOKUSIZE {
+                    // column
+                    if k != i {
+                        solver_state.arr[k][j] = solver_state.arr[k][j] - cell_num_set;
+                    }
+                }
+                // TODO: square
+            }
+        }
     }
 }
 
