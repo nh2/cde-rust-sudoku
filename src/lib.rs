@@ -40,9 +40,9 @@ pub enum Ix {
     Ix9,
 }
 
-impl Into<usize> for Ix {
-    fn into(self) -> usize {
-        match self {
+impl From<Ix> for usize {
+    fn from(item:Ix) -> usize {
+        match item {
             Ix1 => 0,
             Ix2 => 1,
             Ix3 => 2,
@@ -58,32 +58,32 @@ impl Into<usize> for Ix {
 
 impl<T> Sudoku<T> {
     pub fn row<'a>(&'a self, r: Ix) -> impl Iterator<Item = &'a T> {
-        self.arr[r as usize].iter()
+        self.arr[usize::from(r)].iter()
     }
 
     pub fn row_mut<'a>(&'a mut self, r: Ix) -> impl Iterator<Item = &'a mut T> {
-        self.arr[r as usize].iter_mut()
+        self.arr[usize::from(r)].iter_mut()
     }
 
     pub fn col<'a>(&'a self, c: Ix) -> impl Iterator<Item = &'a T> {
-        self.arr.iter().map(move |row| &row[c as usize])
+        self.arr.iter().map(move |row| &row[usize::from(c)])
     }
 
     pub fn col_mut<'a>(&'a mut self, c: Ix) -> impl Iterator<Item = &'a mut T> {
-        self.arr.iter_mut().map(move |row| &mut row[c as usize])
+        self.arr.iter_mut().map(move |row| &mut row[usize::from(c)])
     }
 
     pub fn block<'a>(&'a self, r: Ix, c: Ix) -> impl Iterator<Item = &'a T> {
-        let r_min = (r as usize / 3) * 3;
-        let c_min = (c as usize / 3) * 3;
+        let r_min = (usize::from(r) / 3) * 3;
+        let c_min = (usize::from(c) / 3) * 3;
         self.arr[r_min..r_min + 3]
             .iter()
             .flat_map(move |row| row[c_min..c_min + 3].iter())
     }
 
     pub fn block_mut<'a>(&'a mut self, r: Ix, c: Ix) -> impl Iterator<Item = &'a mut T> {
-        let r_min = (r as usize / 3) * 3;
-        let c_min = (c as usize / 3) * 3;
+        let r_min = (usize::from(r) / 3) * 3;
+        let c_min = (usize::from(c) / 3) * 3;
         self.arr[r_min..r_min + 3]
             .iter_mut()
             .flat_map(move |row| row[c_min..c_min + 3].iter_mut())
