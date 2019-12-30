@@ -71,6 +71,15 @@ pub struct Sudoku<T> {
     arr: [[T; 9]; 9],
 }
 
+//TODO: write from trait with the new Iterator
+//
+//impl From<Sudoku<T>> for Sudoku<U> {
+//    fn from (item: Sudoku<T> -> Sudoku<U> {
+
+
+
+
+
 impl<T> Sudoku<T> {
 
     pub fn get<'a>(&'a self, r: Ix, c: Ix) -> &'a T {
@@ -127,16 +136,16 @@ impl<T> Sudoku<T> {
     }
 
     pub fn block_for_cell<'a>(&'a self, r: Ix, c: Ix) -> impl Iterator<Item = &'a T> {
-        let r_min = (r as usize / 3) * 3;
-        let c_min = (c as usize / 3) * 3;
+        let r_min = (usize::from(r) / 3) * 3;
+        let c_min = (usize::from(c) / 3) * 3;
         self.arr[r_min..r_min + 3]
             .iter()
             .flat_map(move |row| row[c_min..c_min + 3].iter())
     }
 
     pub fn block_for_cell_mut<'a>(&'a mut self, r: Ix, c: Ix) -> impl Iterator<Item = &'a mut T> {
-        let r_min = (r as usize / 3) * 3;
-        let c_min = (c as usize / 3) * 3;
+        let r_min = (usize::from(r) as usize / 3) * 3;
+        let c_min = (usize::from(c) as usize / 3) * 3;
         self.arr[r_min..r_min + 3]
             .iter_mut()
             .flat_map(move |row| row[c_min..c_min + 3].iter_mut())
