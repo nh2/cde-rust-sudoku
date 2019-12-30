@@ -1,3 +1,6 @@
+use std::fmt::{Display, Formatter};
+use std::str::FromStr;
+
 const SUDOKUSIZE: usize = 9;
 
 type GameStateCell = Option<i8>;
@@ -166,6 +169,7 @@ impl Sudoku<NumberSet> {
                 seen = seen | *cell;
             }
             if seen != NumberSet::all() {
+                println!("Row {} unsolved", usize::from(i));
                 return false;
             }
         }
@@ -175,6 +179,7 @@ impl Sudoku<NumberSet> {
                 seen = seen | *cell;
             }
             if seen != NumberSet::all() {
+                println!("Col {} unsolved", usize::from(i));
                 return false;
             }
         }
@@ -184,10 +189,89 @@ impl Sudoku<NumberSet> {
                 seen = seen | *cell;
             }
             if seen != NumberSet::all() {
+                println!("Block {} unsolved", usize::from(i));
                 return false;
             }
         }
         true
+    }
+}
+
+impl Display for Sudoku<NumberSet> {
+    fn fmt(&self, mut formatter: &mut Formatter) -> Result<(), std::fmt::Error> {
+        writeln!(&mut formatter, "┌─┬─┬─┬─┬─┬─┬─┬─┬─┐")?;
+        for row in 0..9 {
+            write!(&mut formatter, "│")?;
+            for col in 0..9 {
+                match self.arr[row][col] {
+                    NumberSet::N1 => {
+                        write!(&mut formatter, "1│")?;
+                    }
+                    NumberSet::N2 => {
+                        write!(&mut formatter, "2│")?;
+                    }
+                    NumberSet::N3 => {
+                        write!(&mut formatter, "3│")?;
+                    }
+                    NumberSet::N4 => {
+                        write!(&mut formatter, "4│")?;
+                    }
+                    NumberSet::N5 => {
+                        write!(&mut formatter, "5│")?;
+                    }
+                    NumberSet::N6 => {
+                        write!(&mut formatter, "6│")?;
+                    }
+                    NumberSet::N7 => {
+                        write!(&mut formatter, "7│")?;
+                    }
+                    NumberSet::N8 => {
+                        write!(&mut formatter, "8│")?;
+                    }
+                    NumberSet::N9 => {
+                        write!(&mut formatter, "9│")?;
+                    }
+                    _ => {
+                        write!(&mut formatter, " │")?;
+                    }
+                }
+            }
+            if row != 8 {
+                writeln!(&mut formatter, "\n├─┼─┼─┼─┼─┼─┼─┼─┼─┤")?;
+            } else {
+                writeln!(&mut formatter, "\n└─┴─┴─┴─┴─┴─┴─┴─┴─┘")?;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl FromStr for Sudoku<NumberSet> {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut arr = [[NumberSet::all(); 9]; 9];
+        let chars: Vec<_> = s.chars().collect();
+        for row in 0..9 {
+            for col in 0..9 {
+                let value = chars[21 + 40 * row + 2 * col];
+                arr[row][col] = match value {
+                    ' ' => NumberSet::all(),
+                    '1' => NumberSet::N1,
+                    '2' => NumberSet::N2,
+                    '3' => NumberSet::N3,
+                    '4' => NumberSet::N4,
+                    '5' => NumberSet::N5,
+                    '6' => NumberSet::N6,
+                    '7' => NumberSet::N7,
+                    '8' => NumberSet::N8,
+                    '9' => NumberSet::N9,
+                    x => {
+                        return Err(format!("Not a valid value: {}", x));
+                    }
+                }
+            }
+        }
+        Ok(Sudoku { arr })
     }
 }
 
