@@ -26,6 +26,43 @@ pub struct Sudoku<T> {
     arr: [[T; 9]; 9],
 }
 
+impl Sudoku<NumberSet> {
+    pub fn is_valid(&self) -> bool {
+        for i in Ix::all_indices() {
+            let mut seen = NumberSet::empty();
+            for cell in self.row(i) {
+                // check that the cell has exactly one number
+                if !cell.is_singleton() {
+                    return false;
+                }
+                seen = seen | *cell;
+            }
+            if seen != NumberSet::all() {
+                return false;
+            }
+        }
+        for i in Ix::all_indices() {
+            let mut seen = NumberSet::empty();
+            for cell in self.col(i) {
+                seen = seen | *cell;
+            }
+            if seen != NumberSet::all() {
+                return false;
+            }
+        }
+        for i in Ix::all_indices() {
+            let mut seen = NumberSet::empty();
+            for cell in self.block(i) {
+                seen = seen | *cell;
+            }
+            if seen != NumberSet::all() {
+                return false;
+            }
+        }
+        true
+    }
+}
+
 #[repr(usize)]
 #[derive(Copy, Clone)]
 pub enum Ix {
@@ -39,9 +76,18 @@ pub enum Ix {
     Ix8,
     Ix9,
 }
+pub use Ix::*;
+
+impl Ix {
+    fn all_indices() -> impl Iterator<Item = Ix> {
+        [Ix1, Ix2, Ix3, Ix4, Ix5, Ix6, Ix7, Ix8, Ix9]
+            .iter()
+            .cloned()
+    }
+}
 
 impl From<Ix> for usize {
-    fn from(item:Ix) -> usize {
+    fn from(item: Ix) -> usize {
         match item {
             Ix1 => 0,
             Ix2 => 1,
@@ -73,17 +119,33 @@ impl<T> Sudoku<T> {
         self.arr.iter_mut().map(move |row| &mut row[usize::from(c)])
     }
 
-    pub fn block<'a>(&'a self, r: Ix, c: Ix) -> impl Iterator<Item = &'a T> {
-        let r_min = (usize::from(r) / 3) * 3;
-        let c_min = (usize::from(c) / 3) * 3;
+    pub fn block<'a>(&'a self, block_ix: Ix) -> impl Iterator<Item = &'a T> {
+        let r_min = (usize::from(block_ix) / 3) * 3;
+        let c_min = (usize::from(block_ix) % 3) * 3;
         self.arr[r_min..r_min + 3]
             .iter()
             .flat_map(move |row| row[c_min..c_min + 3].iter())
     }
 
-    pub fn block_mut<'a>(&'a mut self, r: Ix, c: Ix) -> impl Iterator<Item = &'a mut T> {
-        let r_min = (usize::from(r) / 3) * 3;
-        let c_min = (usize::from(c) / 3) * 3;
+    pub fn block_mut<'a>(&'a mut self, block_ix: Ix) -> impl Iterator<Item = &'a mut T> {
+        let r_min = (usize::from(block_ix) / 3) * 3;
+        let c_min = (usize::from(block_ix) % 3) * 3;
+        self.arr[r_min..r_min + 3]
+            .iter_mut()
+            .flat_map(move |row| row[c_min..c_min + 3].iter_mut())
+    }
+
+    pub fn block_for_cell<'a>(&'a self, r: Ix, c: Ix) -> impl Iterator<Item = &'a T> {
+        let r_min = (r as usize / 3) * 3;
+        let c_min = (c as usize / 3) * 3;
+        self.arr[r_min..r_min + 3]
+            .iter()
+            .flat_map(move |row| row[c_min..c_min + 3].iter())
+    }
+
+    pub fn block_for_cell_mut<'a>(&'a mut self, r: Ix, c: Ix) -> impl Iterator<Item = &'a mut T> {
+        let r_min = (r as usize / 3) * 3;
+        let c_min = (c as usize / 3) * 3;
         self.arr[r_min..r_min + 3]
             .iter_mut()
             .flat_map(move |row| row[c_min..c_min + 3].iter_mut())
