@@ -11,6 +11,7 @@ bitflags! {
         const N7 = 0b001000000;
         const N8 = 0b010000000;
         const N9 = 0b100000000;
+        const Any = 0b111111111;
     }
 }
 
@@ -26,6 +27,30 @@ pub struct Sudoku<T> {
     arr: [[T; 9]; 9],
 }
 
+impl Sudoku<NumberSet> {
+    fn is_valid(&self) -> bool {
+        let mut valid = true;
+        for i in Ix::all_indices() {
+            let mut seen = NumberSet::empty();
+            for cell in self.row(i) {
+                // check that cell is singleton
+                if !cell.is_singleton() {
+                    return false;
+                }
+                seen = seen | *cell;
+            }
+            valid = valid && seen == NumberSet::Any;
+        }
+        for i in Ix::all_indices() {
+            let mut seen = NumberSet::empty();
+            for cell in self.col(i) {
+                seen = seen | *cell;
+            }
+            valid = valid && seen == NumberSet::Any;
+        }
+    }
+}
+
 #[repr(usize)]
 #[derive(Copy, Clone)]
 pub enum Ix {
@@ -38,6 +63,15 @@ pub enum Ix {
     Ix7,
     Ix8,
     Ix9,
+}
+pub use Ix::*;
+
+impl Ix {
+    fn all_indices() -> impl Iterator<Item = Ix> {
+        [Ix1, Ix2, Ix3, Ix4, Ix5, Ix6, Ix7, Ix8, Ix9]
+            .iter()
+            .cloned()
+    }
 }
 
 /// TODO: Replace usize with type that can only represent 1-9
