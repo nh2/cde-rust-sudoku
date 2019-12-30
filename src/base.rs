@@ -91,10 +91,6 @@ pub struct Sudoku<T> {
 //impl From<Sudoku<T>> for Sudoku<U> {
 //    fn from (item: Sudoku<T> -> Sudoku<U> {
 
-
-
-
-
 impl<T> Sudoku<T> {
     pub fn get<'a>(&'a self, r: Ix, c: Ix) -> &'a T {
         &self.arr[usize::from(r)][usize::from(c)]
@@ -202,7 +198,6 @@ impl Sudoku<NumberSet> {
         true
     }
 
-
     /* pub fn is_unsolved(&self) -> bool {
         !self.is_solved && !self.contradiction
     } */
@@ -218,13 +213,13 @@ impl Sudoku<NumberSet> {
             }
             if seen_row != NumberSet::all() {
                 return false;
-            }            
+            }
             for cell in self.col(i) {
                 seen_col = seen_col | *cell;
             }
             if seen_col != NumberSet::all() {
                 return false;
-            }            
+            }
             for cell in self.block(i) {
                 seen_block = seen_block | *cell;
             }
@@ -262,11 +257,11 @@ impl Sudoku<NumberSet> {
             }
             if seen_row != NumberSet::all() {
                 return false;
-            }            
+            }
             for cell in self.col(i) {
                 if *cell == NumberSet::empty() {
                     return false;
-                }                
+                }
                 if cell.is_singleton() {
                     if *cell & seen_col_set != NumberSet::empty() {
                         //number was set before
@@ -279,11 +274,11 @@ impl Sudoku<NumberSet> {
             }
             if seen_col != NumberSet::all() {
                 return false;
-            }            
+            }
             for cell in self.block(i) {
                 if *cell == NumberSet::empty() {
                     return false;
-                }                
+                }
                 if cell.is_singleton() {
                     if *cell & seen_block_set != NumberSet::empty() {
                         //number was set before
@@ -298,9 +293,8 @@ impl Sudoku<NumberSet> {
                 return false;
             }
         }
-        true       
+        true
     }
-
 }
 
 impl Display for Sudoku<NumberSet> {
@@ -540,8 +534,8 @@ pub fn compute_exclude(solver_state: &mut Sudoku<NumberSet>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashSet;
     use lazy_static::lazy_static;
+    use std::collections::HashSet;
 
     const SUDOKU: Sudoku<u8> = Sudoku {
         arr: [
@@ -576,16 +570,16 @@ mod tests {
         assert_eq!(block2, expected);
     }
 
-    const N1:NumberSet = NumberSet::N1;
-    const N2:NumberSet = NumberSet::N2;
-    const N3:NumberSet = NumberSet::N3;
-    const N4:NumberSet = NumberSet::N4;
-    const N5:NumberSet = NumberSet::N5;
-    const N6:NumberSet = NumberSet::N6;
-    const N7:NumberSet = NumberSet::N7;
-    const N8:NumberSet = NumberSet::N8;
-    const N9:NumberSet = NumberSet::N9;
-    const NALL:NumberSet = NumberSet::all();
+    const N1: NumberSet = NumberSet::N1;
+    const N2: NumberSet = NumberSet::N2;
+    const N3: NumberSet = NumberSet::N3;
+    const N4: NumberSet = NumberSet::N4;
+    const N5: NumberSet = NumberSet::N5;
+    const N6: NumberSet = NumberSet::N6;
+    const N7: NumberSet = NumberSet::N7;
+    const N8: NumberSet = NumberSet::N8;
+    const N9: NumberSet = NumberSet::N9;
+    const NALL: NumberSet = NumberSet::all();
     const VALID_SUDOKU: Sudoku<NumberSet> = Sudoku {
         arr: [
             [N5, N6, N3, N2, N1, N7, N9, N8, N4],
@@ -612,8 +606,8 @@ mod tests {
             [N6, N7, N9, N8, N3, NumberSet::empty(), N4, N2, N5],
             [N8, N5, N2, N6, N9, N4, N3, N1, N7],
         ],
-    };    
-    lazy_static! { 
+    };
+    lazy_static! {
         static ref CONTRADICTION_SUDOKU2: Sudoku<NumberSet> = Sudoku {
         //number not in row/block
         arr: [
@@ -627,9 +621,9 @@ mod tests {
             [N6, N7, N9, N8, N3, N1, N4, N2, N5],
             [N8, N5, N2, N6, N9, N4, N3, N1, N7],
         ],
-        }; 
+        };
     }
-    lazy_static! { 
+    lazy_static! {
         static ref CONTRADICTION_SUDOKU3: Sudoku<NumberSet> = Sudoku {
         //one number 2 times in one block
         arr: [
@@ -643,7 +637,7 @@ mod tests {
             [N6, N7, N9, NALL, N3, NALL, NALL, N2, N5],
             [NALL, NALL, NALL, NALL, NALL, NALL, N6, N1, N7],
         ],
-        }; 
+        };
     }
     #[test]
     fn test_is_solved() {
