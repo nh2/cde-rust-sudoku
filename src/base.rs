@@ -86,11 +86,17 @@ pub struct Sudoku<T> {
     arr: [[T; 9]; 9],
 }
 
-//TODO: write from trait with the new Iterator
-//
-//impl From<Sudoku<T>> for Sudoku<U> {
-//    fn from (item: Sudoku<T> -> Sudoku<U> {
 
+fn conv_sudoku_type<T:Copy,U:From<T>>(input_T:Sudoku<T>,
+                    output_U:& mut Sudoku<U>,
+                    ){
+    for i in Ix::all_indices(){
+        for j in Ix::all_indices(){
+            *output_U.get_mut(i,j)=U::from(*input_T.get(i,j))
+        }
+    }
+                        ;
+}
 
 
 
