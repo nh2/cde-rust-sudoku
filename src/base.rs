@@ -120,7 +120,23 @@ impl From<Ix> for usize {
     }
 }
 
-#[derive(Clone)]
+impl From<Ix> for NumberSet {
+    fn from(item: Ix) -> NumberSet {
+        match item {
+            Ix1 => NumberSet::N1,
+            Ix2 => NumberSet::N2,
+            Ix3 => NumberSet::N3,
+            Ix4 => NumberSet::N4,
+            Ix5 => NumberSet::N5,
+            Ix6 => NumberSet::N6,
+            Ix7 => NumberSet::N7,
+            Ix8 => NumberSet::N8,
+            Ix9 => NumberSet::N9,
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq)]
 pub struct Sudoku<T> {
     // row-major
     arr: [[T; 9]; 9],
@@ -515,8 +531,8 @@ pub fn parse_game_state(input: &str) -> Result<Sudoku<GameStateCell>, String> {
                 } else {
                     match ch {
                         '1' => Some(1),
-                        '2' => Some(3),
-                        '3' => Some(4),
+                        '2' => Some(2),
+                        '3' => Some(3),
                         '4' => Some(4),
                         '5' => Some(5),
                         '6' => Some(6),
@@ -549,6 +565,9 @@ pub fn parse_game_state(input: &str) -> Result<Sudoku<GameStateCell>, String> {
     // TODO: define error conditions
     if game_state_vec.len() > SUDOKUSIZE {
         return Err("Error while parsing Sudoku: Too many lines".to_string());
+    }
+    if game_state_vec.len() < SUDOKUSIZE {
+        println!("Warning while parsing Sudoku: Not enough lines, filling with UNKNOWN.");
     }
     //println!("{:?}", game_state.arr);
     Ok(game_state)
@@ -671,6 +690,150 @@ pub fn compute_exclude(solver_state: &mut Sudoku<NumberSet>) {
             }
         }
     }
+}
+
+/// compute field constraints: assign known field when it's the only option
+///     
+/// Strategy:
+/// - scan every row, column, square:
+/// - count how often each number occours in every row (/column/square)
+/// - if a number only occours once in a row (/...), assign it to this cell
+pub fn compute_take_cell(solver_state: &mut Sudoku<NumberSet>) {
+    for i in 0..SUDOKUSIZE {
+        // row
+        let mut cnt = [0u32; SUDOKUSIZE];
+        let mut pos: [Option<usize>; SUDOKUSIZE] = [None; SUDOKUSIZE];
+        for j in 0..SUDOKUSIZE {
+            // column
+            for num_idx in Ix::all_indices() {
+                if solver_state.arr[i][j] & NumberSet::from(num_idx) != NumberSet::NONE {
+                    // Nx exists in solver_state.arr[i][j]
+                    cnt[usize::from(num_idx)] += 1;
+                    pos[usize::from(num_idx)] = Some(j)
+                };
+            }
+        }
+        for num_idx in Ix::all_indices() {
+            if cnt[usize::from(num_idx)] == 1 {
+                // this value is unique in our row, so it needs to be placed in that cell.
+                solver_state.arr[i][pos[usize::from(num_idx)].unwrap()] = NumberSet::from(num_idx)
+            }
+        }
+    }
+    for j in 0..SUDOKUSIZE {
+        // TODO: column
+        let mut cnt = [0u32; SUDOKUSIZE];
+        let mut pos: [Option<usize>; SUDOKUSIZE] = [None; SUDOKUSIZE];
+        for i in 0..SUDOKUSIZE {
+            // column
+            for num_idx in Ix::all_indices() {
+                if solver_state.arr[i][j] & NumberSet::from(num_idx) != NumberSet::NONE {
+                    // Nx exists in solver_state.arr[i][j]
+                    cnt[usize::from(num_idx)] += 1;
+                    pos[usize::from(num_idx)] = Some(i)
+                };
+            }
+        }
+        for num_idx in Ix::all_indices() {
+            if cnt[usize::from(num_idx)] == 1 {
+                // this value is unique in our row, so it needs to be placed in that cell.
+                solver_state.arr[pos[usize::from(num_idx)].unwrap()][j] = NumberSet::from(num_idx)
+            }
+        }
+    }
+    for s in 0..SUDOKUSIZE {
+        // square
+        let mut cnt = [0u32; SUDOKUSIZE];
+        let mut pos: [Option<usize>; SUDOKUSIZE] = [None; SUDOKUSIZE];
+        for k in 0..SUDOKUSIZE {
+            // column
+            let (i, j) = sk2ij(s, k);
+            for num_idx in Ix::all_indices() {
+                if solver_state.arr[i][j] & NumberSet::from(num_idx) != NumberSet::NONE {
+                    // Nx exists in solver_state.arr[i][j]
+                    cnt[usize::from(num_idx)] += 1;
+                    pos[usize::from(num_idx)] = Some(k)
+                };
+            }
+        }
+        for num_idx in Ix::all_indices() {
+            if cnt[usize::from(num_idx)] == 1 {
+                let k = pos[usize::from(num_idx)].unwrap();
+                let (i, j) = sk2ij(s, k);
+                // this value is unique in our row, so it needs to be placed in that cell.
+                solver_state.arr[i][j] = NumberSet::from(num_idx)
+            }
+        }
+    }
+}
+
+// compute field constraints: iteratively exclude and take
+pub fn compute_solve1(solver_state: &mut Sudoku<NumberSet>, verbose: bool) -> (bool, bool) {
+    let mut i = 0u32;
+    let mut changed;
+    let mut won;
+    let mut lost;
+    loop {
+        let old_solver_state = solver_state.clone();
+        compute_exclude(solver_state);
+        compute_take_cell(solver_state);
+        i += 1;
+        changed = !(&old_solver_state == solver_state);
+        won = solver_state.is_solved();
+        lost = !solver_state.has_no_contradiction();
+        if changed & verbose {
+            let game_state = solver_to_game_state(&solver_state);
+            println!(
+                "reduced {}: {}{}{}",
+                i,
+                if changed { "changed " } else { "" },
+                if won { "won" } else { "" },
+                if lost { "lost" } else { "" }
+            );
+            println!("{}", format_game_state(&game_state));
+        }
+        if !changed | won | lost {
+            break;
+        }
+    }
+    return (won, lost);
+}
+
+// compute field constraints: simple depth-first search (with very simple strategy)
+pub fn compute_solve_tree(solver_state: &mut Sudoku<NumberSet>, verbose: bool) -> (bool, bool) {
+    let (won, lost) = compute_solve1(solver_state, verbose);
+    if won | lost {
+        return (won, lost);
+    }
+    for i in 0..SUDOKUSIZE {
+        for j in 0..SUDOKUSIZE {
+            let lenfij = solver_state.arr[i][j].bits().count_ones();
+            if lenfij > 1 {
+                for num_idx in Ix::all_indices() {
+                    if solver_state.arr[i][j] & NumberSet::from(num_idx) != NumberSet::NONE {
+                        // Nx exists in solver_state.arr[i][j]
+                        let mut work_state = solver_state.clone();
+                        work_state.arr[i][j] = NumberSet::from(num_idx); // try this move
+                        if verbose {
+                            println!("move:");
+                            let game_state = solver_to_game_state(&solver_state);
+                            println!("{}", format_game_state(&game_state));
+                        }
+                        let (won, lost) = compute_solve_tree(&mut work_state, verbose);
+                        if won {
+                            *solver_state = work_state;
+                            return (won, lost);
+                        }
+                    };
+                }
+            }
+        }
+    }
+
+    // tried all moves, but none was successfull
+    let won = false;
+    let lost = true;
+    return (won, lost);
 }
 
 #[cfg(test)]
@@ -809,4 +972,42 @@ mod tests {
         assert_eq!(CONTRADICTION_SUDOKU2.all_numbers_possible(), false);
         assert_eq!(CONTRADICTION_SUDOKU3.all_numbers_possible(), true);
     }
+}
+
+// TODO: convert to unit test
+fn solve_test1() {
+    let input = "
+ 8 9  4
+5 6 8 79
+943 6  8
+ 9    158
+6  528  4
+875    6
+ 5  4 639
+ 69 7 8 1
+  8  9 4 ";
+
+    let game_state = parse_game_state(&input).unwrap();
+    println!("{}", format_game_state(&game_state));
+    let mut solver_state = game_to_solver_state(&game_state);
+    let (_won, _lost) = compute_solve1(&mut solver_state, true);
+    let game_state = solver_to_game_state(&solver_state);
+    println!("{}", format_game_state(&game_state));
+}
+
+// TODO: convert to unit test
+fn parse_test1() {
+    let input = "
+123456789
+234567891
+345678912
+456789123
+567891234
+678912345
+789123456
+891234567
+912345678
+";
+    let game_state = parse_game_state(&input).unwrap();
+    println!("{}", format_game_state(&game_state));
 }
