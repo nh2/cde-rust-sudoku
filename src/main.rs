@@ -44,11 +44,79 @@ const SUDOKU1: &'static str = "\
 │ │ │8│ │ │9│ │4│ │
 └─┴─┴─┴─┴─┴─┴─┴─┴─┘";
 
+const SUDOKU2: &'static str = "\
+┌─┬─┬─┬─┬─┬─┬─┬─┬─┐
+│4│ │ │ │ │ │8│ │5│
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │3│ │ │ │ │ │ │ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │ │ │7│ │ │ │ │ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │2│ │ │ │ │ │6│ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │ │ │ │8│ │4│ │ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │ │ │ │1│ │ │ │ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │ │ │6│ │3│ │7│ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│5│ │ │2│ │ │ │ │ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│1│ │4│ │ │ │ │ │ │
+└─┴─┴─┴─┴─┴─┴─┴─┴─┘";
+
+const SUDOKU3: &'static str = "\
+┌─┬─┬─┬─┬─┬─┬─┬─┬─┐
+│8│ │ │ │ │ │ │ │ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │ │3│6│ │ │ │ │ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │7│ │ │9│ │2│ │ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │5│ │ │ │7│ │ │ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │ │ │ │4│5│7│ │ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │ │ │1│ │ │ │3│ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │ │1│ │ │ │ │6│8│
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │ │8│5│ │ │ │1│ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │9│ │ │ │ │4│ │ │
+└─┴─┴─┴─┴─┴─┴─┴─┴─┘";
+
+
+const EMPTY_SUDOKU: &'static str = "\
+┌─┬─┬─┬─┬─┬─┬─┬─┬─┐
+│ │ │ │ │ │ │ │ │ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │ │ │ │ │ │ │ │ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │ │ │ │ │ │ │ │ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │ │ │ │ │ │ │ │ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │ │ │ │ │ │ │ │ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │ │ │ │ │ │ │ │ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │ │ │ │ │ │ │ │ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │ │ │ │ │ │ │ │ │
+├─┼─┼─┼─┼─┼─┼─┼─┼─┤
+│ │ │ │ │ │ │ │ │ │
+└─┴─┴─┴─┴─┴─┴─┴─┴─┘";
+
 fn main() {
-    let mut sudoku = Sudoku::from_str(SUDOKU1).unwrap();
-    let sudoku = match brute_force(sudoku) {
+    let sudoku_input = Sudoku::from_str(SUDOKU2).unwrap();
+
+
+    let timer = std::time::Instant::now();
+    let mut sudoku = sudoku_input.clone();
+    let sudoku = match brute_force_with_exclude(sudoku) {
         SolverResult::Solved(s) => {
-            println!("solved!");
+            println!("Solved!");
             s
         }
         SolverResult::Contradiction(s) => {
@@ -57,4 +125,21 @@ fn main() {
         }
     };
     println!("{}", sudoku);
+    println!("Computed in {} seconds", timer.elapsed().as_secs());
+
+
+    let timer = std::time::Instant::now();
+    let mut sudoku = sudoku_input.clone();
+    let sudoku = match brute_force(sudoku) {
+        SolverResult::Solved(s) => {
+            println!("Solved!");
+            s
+        }
+        SolverResult::Contradiction(s) => {
+            println!("Contradiction!");
+            s
+        }
+    };
+    println!("{}", sudoku);
+    println!("Computed in {} seconds", timer.elapsed().as_secs());
 }

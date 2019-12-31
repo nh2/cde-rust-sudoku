@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -41,9 +42,48 @@ impl NumberSet {
     }
 }
 
+impl TryFrom<char> for NumberSet {
+    type Error = String;
+    fn try_from(c: char) -> Result<Self, Self::Error> {
+        Ok(match c {
+            ' ' => NumberSet::all(),
+            '1' => NumberSet::N1,
+            '2' => NumberSet::N2,
+            '3' => NumberSet::N3,
+            '4' => NumberSet::N4,
+            '5' => NumberSet::N5,
+            '6' => NumberSet::N6,
+            '7' => NumberSet::N7,
+            '8' => NumberSet::N8,
+            '9' => NumberSet::N9,
+            x => {
+                return Err(format!("Not a valid value: {}", x));
+            }
+        })
+    }
+}
+
+impl Display for NumberSet {
+    fn fmt(&self, mut formatter: &mut Formatter) -> Result<(), std::fmt::Error> {
+        let n: char = match self {
+            &NumberSet::N1 => '1',
+            &NumberSet::N2 => '2',
+            &NumberSet::N3 => '3',
+            &NumberSet::N4 => '4',
+            &NumberSet::N5 => '5',
+            &NumberSet::N6 => '6',
+            &NumberSet::N7 => '7',
+            &NumberSet::N8 => '8',
+            &NumberSet::N9 => '9',
+            _ => ' ',
+        };
+        write!(&mut formatter, "{}", n)
+    }
+}
+
 /// Indexing type for rows and columns for compile-time bounds checks
 #[repr(usize)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum Ix {
     Ix1,
     Ix2,
@@ -86,20 +126,13 @@ pub struct Sudoku<T> {
     arr: [[T; 9]; 9],
 }
 
-
-fn conv_sudoku_type<T:Copy,U:From<T>>(input_T:Sudoku<T>,
-                    output_U:& mut Sudoku<U>,
-                    ){
-    for i in Ix::all_indices(){
-        for j in Ix::all_indices(){
-            *output_U.get_mut(i,j)=U::from(*input_T.get(i,j))
+pub fn conv_sudoku_type<T: Copy, U: From<T>>(input_T: Sudoku<T>, output_U: &mut Sudoku<U>) {
+    for i in Ix::all_indices() {
+        for j in Ix::all_indices() {
+            *output_U.get_mut(i, j) = U::from(*input_T.get(i, j))
         }
     }
-                        ;
 }
-
-
-
 
 impl<T> Sudoku<T> {
     pub fn get<'a>(&'a self, r: Ix, c: Ix) -> &'a T {
@@ -170,6 +203,84 @@ impl<T> Sudoku<T> {
             .iter_mut()
             .flat_map(move |row| row[c_min..c_min + 3].iter_mut())
     }
+
+    pub fn regions<'a>(&'a self) -> Regions<'a, T> {
+        unimplemented!()
+    }
+}
+
+#[derive(Copy, Clone)]
+enum RegionType {
+    Row,
+    Col,
+    Block,
+    Ended,
+}
+
+impl RegionType {
+    fn succ(self) -> Self {
+        match self {
+            Self::Row => Self::Col,
+            Self::Col => Self::Block,
+            Self::Block => Self::Ended,
+            Self::Ended => Self::Ended,
+        }
+    }
+}
+
+pub struct Regions<'a, T> {
+    sudoku: &'a Sudoku<T>,
+    ix: Ix,
+    ty: RegionType,
+}
+
+impl<'a, T> Regions<'a, T> {
+    pub fn new(sudoku: &'a Sudoku<T>) -> Self {
+        Self {
+            sudoku,
+            ix: Ix1,
+            ty: RegionType::Row,
+        }
+    }
+}
+
+impl<'a, T> Iterator for Regions<'a, T> {
+    type Item = Box<dyn Iterator<Item = &'a T> + 'a>;
+
+    fn next(&'_ mut self) -> Option<Self::Item> {
+        let res = match self.ty {
+            RegionType::Row => {
+                Box::new(self.sudoku.row(self.ix)) as Box<dyn Iterator<Item = &'a T>>
+            }
+            RegionType::Col => {
+                Box::new(self.sudoku.col(self.ix)) as Box<dyn Iterator<Item = &'a T>>
+            }
+            RegionType::Block => {
+                Box::new(self.sudoku.block(self.ix)) as Box<dyn Iterator<Item = &'a T>>
+            }
+            RegionType::Ended => {
+                return None;
+            }
+        };
+
+        if Ix9 == self.ix {
+            self.ty = self.ty.succ();
+        };
+
+        self.ix = match self.ix {
+            Ix1 => Ix2,
+            Ix2 => Ix3,
+            Ix3 => Ix4,
+            Ix4 => Ix5,
+            Ix5 => Ix6,
+            Ix6 => Ix7,
+            Ix7 => Ix8,
+            Ix8 => Ix9,
+            Ix9 => Ix1,
+        };
+
+        Some(res)
+    }
 }
 
 impl Sudoku<NumberSet> {
@@ -186,18 +297,14 @@ impl Sudoku<NumberSet> {
             if seen != NumberSet::all() {
                 return false;
             }
-        }
-        for i in Ix::all_indices() {
-            let mut seen = NumberSet::empty();
+            seen = NumberSet::empty();
             for cell in self.col(i) {
                 seen = seen | *cell;
             }
             if seen != NumberSet::all() {
                 return false;
             }
-        }
-        for i in Ix::all_indices() {
-            let mut seen = NumberSet::empty();
+            seen = NumberSet::empty();
             for cell in self.block(i) {
                 seen = seen | *cell;
             }
@@ -208,6 +315,45 @@ impl Sudoku<NumberSet> {
         true
     }
 
+    /// Checks if any number occurs twice in a region or if there are any empty cells.
+    pub fn is_invalid(&self) -> bool {
+        for i in Ix::all_indices() {
+            let mut seen = NumberSet::empty();
+            for cell in self.row(i) {
+                if cell.is_singleton() {
+                    if cell.intersects(seen) {
+                        return true;
+                    }
+                    seen = seen | *cell;
+                } else if cell.is_empty() {
+                    return true;
+                }
+            }
+            seen = NumberSet::empty();
+            for cell in self.col(i) {
+                if cell.is_singleton() {
+                    if cell.intersects(seen) {
+                        return true;
+                    }
+                    seen = seen | *cell;
+                } else if cell.is_empty() {
+                    return true;
+                }
+            }
+            seen = NumberSet::empty();
+            for cell in self.block(i) {
+                if cell.is_singleton() {
+                    if cell.intersects(seen) {
+                        return true;
+                    }
+                    seen = seen | *cell;
+                } else if cell.is_empty() {
+                    return true;
+                }
+            }
+        }
+        false
+    }
 
     /* pub fn is_unsolved(&self) -> bool {
         !self.is_solved && !self.contradiction
@@ -224,13 +370,13 @@ impl Sudoku<NumberSet> {
             }
             if seen_row != NumberSet::all() {
                 return false;
-            }            
+            }
             for cell in self.col(i) {
                 seen_col = seen_col | *cell;
             }
             if seen_col != NumberSet::all() {
                 return false;
-            }            
+            }
             for cell in self.block(i) {
                 seen_block = seen_block | *cell;
             }
@@ -241,7 +387,7 @@ impl Sudoku<NumberSet> {
         true
     }
 
-    pub fn has_no_contradiciton(&self) -> bool {
+    pub fn has_no_contradiction(&self) -> bool {
         //check that any number is possible in all rows, cols and blocks
         //check that any set number is only in one cell in every row, col and block
         //check that any cell has min one number
@@ -268,11 +414,11 @@ impl Sudoku<NumberSet> {
             }
             if seen_row != NumberSet::all() {
                 return false;
-            }            
+            }
             for cell in self.col(i) {
                 if *cell == NumberSet::empty() {
                     return false;
-                }                
+                }
                 if cell.is_singleton() {
                     if *cell & seen_col_set != NumberSet::empty() {
                         //number was set before
@@ -285,11 +431,11 @@ impl Sudoku<NumberSet> {
             }
             if seen_col != NumberSet::all() {
                 return false;
-            }            
+            }
             for cell in self.block(i) {
                 if *cell == NumberSet::empty() {
                     return false;
-                }                
+                }
                 if cell.is_singleton() {
                     if *cell & seen_block_set != NumberSet::empty() {
                         //number was set before
@@ -304,54 +450,23 @@ impl Sudoku<NumberSet> {
                 return false;
             }
         }
-        true       
+        true
     }
-
 }
 
 impl Display for Sudoku<NumberSet> {
     fn fmt(&self, mut formatter: &mut Formatter) -> Result<(), std::fmt::Error> {
-        writeln!(&mut formatter, "┌─┬─┬─┬─┬─┬─┬─┬─┬─┐")?;
         for row in 0..9 {
-            write!(&mut formatter, "│")?;
             for col in 0..9 {
-                match self.arr[row][col] {
-                    NumberSet::N1 => {
-                        write!(&mut formatter, "1│")?;
-                    }
-                    NumberSet::N2 => {
-                        write!(&mut formatter, "2│")?;
-                    }
-                    NumberSet::N3 => {
-                        write!(&mut formatter, "3│")?;
-                    }
-                    NumberSet::N4 => {
-                        write!(&mut formatter, "4│")?;
-                    }
-                    NumberSet::N5 => {
-                        write!(&mut formatter, "5│")?;
-                    }
-                    NumberSet::N6 => {
-                        write!(&mut formatter, "6│")?;
-                    }
-                    NumberSet::N7 => {
-                        write!(&mut formatter, "7│")?;
-                    }
-                    NumberSet::N8 => {
-                        write!(&mut formatter, "8│")?;
-                    }
-                    NumberSet::N9 => {
-                        write!(&mut formatter, "9│")?;
-                    }
-                    _ => {
-                        write!(&mut formatter, " │")?;
-                    }
+                if col == 3 || col == 6 {
+                    write!(&mut formatter, "│")?;
                 }
+                write!(&mut formatter, "{}", self.arr[row][col])?;
             }
-            if row != 8 {
-                writeln!(&mut formatter, "\n├─┼─┼─┼─┼─┼─┼─┼─┼─┤")?;
+            if row == 2 || row == 5 {
+                writeln!(&mut formatter, "\n───┼───┼───")?;
             } else {
-                writeln!(&mut formatter, "\n└─┴─┴─┴─┴─┴─┴─┴─┴─┘")?;
+                writeln!(&mut formatter, "")?;
             }
         }
         Ok(())
@@ -366,21 +481,7 @@ impl FromStr for Sudoku<NumberSet> {
         for row in 0..9 {
             for col in 0..9 {
                 let value = chars[21 + 40 * row + 2 * col];
-                arr[row][col] = match value {
-                    ' ' => NumberSet::all(),
-                    '1' => NumberSet::N1,
-                    '2' => NumberSet::N2,
-                    '3' => NumberSet::N3,
-                    '4' => NumberSet::N4,
-                    '5' => NumberSet::N5,
-                    '6' => NumberSet::N6,
-                    '7' => NumberSet::N7,
-                    '8' => NumberSet::N8,
-                    '9' => NumberSet::N9,
-                    x => {
-                        return Err(format!("Not a valid value: {}", x));
-                    }
-                }
+                arr[row][col] = NumberSet::try_from(value)?;
             }
         }
         Ok(Sudoku { arr })
@@ -520,6 +621,28 @@ pub fn solver_to_game_state(solver_state: &Sudoku<NumberSet>) -> Sudoku<GameStat
     game_state
 }
 
+// conversion of field indices: row/column to outer_square/inner_square
+fn ij2sk(i: usize, j: usize) -> (usize, usize) {
+    let s = i / 3 * 3 + j / 3;
+    let k = i % 3 * 3 + j % 3;
+    return (s, k);
+}
+
+// conversion of field indices: outer_square/inner_square to row/column
+fn sk2ij(s: usize, k: usize) -> (usize, usize) {
+    let i = s / 3 * 3 + k / 3;
+    let j = s % 3 * 3 + k % 3;
+    return (i, j);
+}
+
+/// compute field constraints: use known fields to remove options
+///
+/// Strategy:
+/// 1. iterate over all cells to finde known cell
+/// 2. for every known cell, remove value from every
+///   - row
+///   - column
+///   - square
 pub fn compute_exclude(solver_state: &mut Sudoku<NumberSet>) {
     for i in 0..SUDOKUSIZE {
         for j in 0..SUDOKUSIZE {
@@ -537,7 +660,14 @@ pub fn compute_exclude(solver_state: &mut Sudoku<NumberSet>) {
                         solver_state.arr[k][j] = solver_state.arr[k][j] - cell_num_set;
                     }
                 }
-                // TODO: square
+                let (sq, sqi) = ij2sk(i, j);
+                for k in 0..SUDOKUSIZE {
+                    // square
+                    if k != sqi {
+                        let (i2, j2) = sk2ij(sq, k);
+                        solver_state.arr[i2][j2] = solver_state.arr[i2][j2] - cell_num_set;
+                    }
+                }
             }
         }
     }
@@ -546,8 +676,8 @@ pub fn compute_exclude(solver_state: &mut Sudoku<NumberSet>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashSet;
     use lazy_static::lazy_static;
+    use std::collections::HashSet;
 
     const SUDOKU: Sudoku<u8> = Sudoku {
         arr: [
@@ -582,16 +712,16 @@ mod tests {
         assert_eq!(block2, expected);
     }
 
-    const N1:NumberSet = NumberSet::N1;
-    const N2:NumberSet = NumberSet::N2;
-    const N3:NumberSet = NumberSet::N3;
-    const N4:NumberSet = NumberSet::N4;
-    const N5:NumberSet = NumberSet::N5;
-    const N6:NumberSet = NumberSet::N6;
-    const N7:NumberSet = NumberSet::N7;
-    const N8:NumberSet = NumberSet::N8;
-    const N9:NumberSet = NumberSet::N9;
-    const NALL:NumberSet = NumberSet::all();
+    const N1: NumberSet = NumberSet::N1;
+    const N2: NumberSet = NumberSet::N2;
+    const N3: NumberSet = NumberSet::N3;
+    const N4: NumberSet = NumberSet::N4;
+    const N5: NumberSet = NumberSet::N5;
+    const N6: NumberSet = NumberSet::N6;
+    const N7: NumberSet = NumberSet::N7;
+    const N8: NumberSet = NumberSet::N8;
+    const N9: NumberSet = NumberSet::N9;
+    const NALL: NumberSet = NumberSet::all();
     const VALID_SUDOKU: Sudoku<NumberSet> = Sudoku {
         arr: [
             [N5, N6, N3, N2, N1, N7, N9, N8, N4],
@@ -618,8 +748,8 @@ mod tests {
             [N6, N7, N9, N8, N3, NumberSet::empty(), N4, N2, N5],
             [N8, N5, N2, N6, N9, N4, N3, N1, N7],
         ],
-    };    
-    lazy_static! { 
+    };
+    lazy_static! {
         static ref CONTRADICTION_SUDOKU2: Sudoku<NumberSet> = Sudoku {
         //number not in row/block
         arr: [
@@ -633,11 +763,11 @@ mod tests {
             [N6, N7, N9, N8, N3, N1, N4, N2, N5],
             [N8, N5, N2, N6, N9, N4, N3, N1, N7],
         ],
-        }; 
+        };
     }
-    lazy_static! { 
+    lazy_static! {
         static ref CONTRADICTION_SUDOKU3: Sudoku<NumberSet> = Sudoku {
-        //one number 2 times in one block
+        // Number 6 occurs 2 times in the lower right block
         arr: [
             [N5, NALL, N3, N2, N1, NALL, NALL, N8, N4],
             [N9, N8, N1, NALL, N4, NALL, NALL, N5, N2],
@@ -649,7 +779,7 @@ mod tests {
             [N6, N7, N9, NALL, N3, NALL, NALL, N2, N5],
             [NALL, NALL, NALL, NALL, NALL, NALL, N6, N1, N7],
         ],
-        }; 
+        };
     }
     #[test]
     fn test_is_solved() {
@@ -659,11 +789,18 @@ mod tests {
         assert_eq!(CONTRADICTION_SUDOKU3.is_solved(), false);
     }
     #[test]
+    fn test_is_invalid() {
+        assert_eq!(VALID_SUDOKU.is_invalid(), false);
+        assert_eq!(CONTRADICTION_SUDOKU1.is_invalid(), true);
+        assert_eq!(CONTRADICTION_SUDOKU2.is_invalid(), false);
+        assert_eq!(CONTRADICTION_SUDOKU3.is_invalid(), true);
+    }
+    #[test]
     fn test_has_no_contradiction() {
-        assert_eq!(VALID_SUDOKU.has_no_contradiciton(), true);
-        assert_eq!(CONTRADICTION_SUDOKU1.has_no_contradiciton(), false);
-        assert_eq!(CONTRADICTION_SUDOKU2.has_no_contradiciton(), false);
-        assert_eq!(CONTRADICTION_SUDOKU3.has_no_contradiciton(), false);
+        assert_eq!(VALID_SUDOKU.has_no_contradiction(), true);
+        assert_eq!(CONTRADICTION_SUDOKU1.has_no_contradiction(), false);
+        assert_eq!(CONTRADICTION_SUDOKU2.has_no_contradiction(), false);
+        assert_eq!(CONTRADICTION_SUDOKU3.has_no_contradiction(), false);
     }
     #[test]
     fn test_all_numbers_possible() {
