@@ -5,9 +5,13 @@ pub enum SolverResult {
     Contradiction(Sudoku<NumberSet>),
 }
 
+
 pub fn brute_force(mut sudoku: Sudoku<NumberSet>) -> SolverResult {
     if sudoku.is_solved() {
         return SolverResult::Solved(sudoku);
+    }
+    if sudoku.is_invalid() {
+        return SolverResult::Contradiction(sudoku);
     }
     let first_empty_cell = sudoku.iter_with_index().find(|elem| !elem.2.is_singleton());
     let (r, c, cell) = match first_empty_cell {
