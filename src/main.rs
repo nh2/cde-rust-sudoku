@@ -109,7 +109,27 @@ const EMPTY_SUDOKU: &'static str = "\
 └─┴─┴─┴─┴─┴─┴─┴─┴─┘";
 
 fn main() {
-    let mut sudoku = Sudoku::from_str(SUDOKU2).unwrap();
+    let sudoku_input = Sudoku::from_str(SUDOKU2).unwrap();
+
+
+    let timer = std::time::Instant::now();
+    let mut sudoku = sudoku_input.clone();
+    let sudoku = match brute_force_with_exclude(sudoku) {
+        SolverResult::Solved(s) => {
+            println!("Solved!");
+            s
+        }
+        SolverResult::Contradiction(s) => {
+            println!("Contradiction!");
+            s
+        }
+    };
+    println!("{}", sudoku);
+    println!("Computed in {} seconds", timer.elapsed().as_secs());
+
+
+    let timer = std::time::Instant::now();
+    let mut sudoku = sudoku_input.clone();
     let sudoku = match brute_force(sudoku) {
         SolverResult::Solved(s) => {
             println!("Solved!");
@@ -121,4 +141,5 @@ fn main() {
         }
     };
     println!("{}", sudoku);
+    println!("Computed in {} seconds", timer.elapsed().as_secs());
 }

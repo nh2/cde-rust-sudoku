@@ -618,6 +618,28 @@ pub fn solver_to_game_state(solver_state: &Sudoku<NumberSet>) -> Sudoku<GameStat
     game_state
 }
 
+// conversion of field indices: row/column to outer_square/inner_square
+fn ij2sk(i: usize, j: usize) -> (usize, usize) {
+    let s = i / 3 * 3 + j / 3;
+    let k = i % 3 * 3 + j % 3;
+    return (s, k);
+}
+
+// conversion of field indices: outer_square/inner_square to row/column
+fn sk2ij(s: usize, k: usize) -> (usize, usize) {
+    let i = s / 3 * 3 + k / 3;
+    let j = s % 3 * 3 + k % 3;
+    return (i, j);
+}
+
+/// compute field constraints: use known fields to remove options
+///     
+/// Strategy:
+/// 1. iterate over all cells to finde known cell
+/// 2. for every known cell, remove value from every
+///   - row
+///   - column
+///   - square
 pub fn compute_exclude(solver_state: &mut Sudoku<NumberSet>) {
     for i in 0..SUDOKUSIZE {
         for j in 0..SUDOKUSIZE {
@@ -635,7 +657,14 @@ pub fn compute_exclude(solver_state: &mut Sudoku<NumberSet>) {
                         solver_state.arr[k][j] = solver_state.arr[k][j] - cell_num_set;
                     }
                 }
-                // TODO: square
+                let (sq, sqi) = ij2sk(i, j);
+                for k in 0..SUDOKUSIZE {
+                    // square
+                    if k != sqi {
+                        let (i2, j2) = sk2ij(sq, k);
+                        solver_state.arr[i2][j2] = solver_state.arr[i2][j2] - cell_num_set;
+                    }
+                }
             }
         }
     }
